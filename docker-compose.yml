@@ -1,0 +1,69 @@
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.2.12
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - "PLAINTEXT://0.0.0.0:9092"
+      - --advertise-kafka-addr
+      - "PLAINTEXT://127.0.0.1:9092"
+      - --pandaproxy-addr
+      - "PLAINTEXT://0.0.0.0:8082"
+      - --advertise-pandaproxy-addr
+      - "PLAINTEXT://127.0.0.1:8082"
+    ports:
+      - "9092:9092"
+      - "8082:8082"
+
+  redpanda-console:
+    image: redpandadata/console:v2.6.1
+    depends_on:
+      - redpanda
+    environment:
+      KAFKA_BROKERS: "redpanda:9092"
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: cloudops
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.2
+    depends_on:
+      - postgres
+    environment:
+      MLFLOW_BACKEND_STORE_URI: "postgresql://app:app@postgres:5432/cloudops"
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: "/mlflow/artifacts"
+    ports:
+      - "5001:5000"
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://app:app@postgres:5432/cloudops
+      --default-artifact-root /mlflow/artifacts
+
+volumes:
+  pgdata:
+  mlflow_artifacts:
