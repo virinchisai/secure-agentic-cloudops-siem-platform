@@ -14,7 +14,8 @@ This project simulates how modern security platforms ingest logs, process them i
   <img src="https://img.shields.io/badge/Code%20Style-Black-000000" />
 </p>
 
-<!-- **Note:** CI/CD, Tests, SAST, secrets scanning, and docs badges will be added once implemented. -->
+> Badges reflect repository metadata only.  
+> CI/CD, tests, SAST, secrets scanning, and docs badges will be enabled once workflows are implemented.
 
 ---
 
@@ -36,54 +37,53 @@ This repository intentionally includes **both implemented components and a forwa
 
 ### ✅ Implemented (fully working)
 
-- **Ingest service:** FastAPI-based log ingestion.
-- **Streaming:** Kafka-compatible event streaming using Redpanda.
-- **Detection:** Detection service consuming Kafka events.
-- **Persistence:** PostgreSQL persistence for events and alerts.
-- **Validation:** End-to-end data flow validation.
-- **One-command run:** Local execution via `scripts/run_all.sh`.
-- **Infra:** Dockerized infrastructure.
+- Ingest service (FastAPI)
+- Kafka-compatible streaming (Redpanda)
+- Detection service consuming Kafka events
+- PostgreSQL persistence for events and alerts
+- End-to-end data flow validation
+- One-command local execution (`scripts/run_all.sh`)
+- Dockerized infrastructure
 
 ### 🧭 Planned / roadmap
 
-- **Agentic reasoning:** Agentic LLM reasoning engine.
-- **Knowledge retrieval:** Vector knowledge base for contextual retrieval.
-- **Automation:** Automated remediation workflows.
-- **Gateway & auth:** API gateway with authentication (JWT/OAuth/RBAC).
-- **UI:** SIEM dashboards and visualizations.
-- **Cloud:** Cloud deployment (AWS / GCP).
-- **Engineering:** CI/CD pipelines (tests, SAST, secrets scanning).
+- Agentic LLM reasoning engine
+- Vector knowledge base for contextual retrieval
+- Automated remediation workflows
+- API gateway with authentication (JWT / OAuth / RBAC)
+- SIEM dashboards and visualizations
+- Cloud deployment (AWS / GCP)
+- CI/CD pipelines (tests, SAST, secrets scanning)
 
 > ⚠️ **Scope note**  
-> Advanced components described later in this README (agentic reasoning, vector retrieval, workflows, API gateway, cloud deployment)
-> represent the **architectural roadmap and system design intent**.  
+> Advanced components described later in this README represent **architectural intent and future roadmap**.  
 > The current implementation focuses on a production-grade ingestion, streaming, detection, and persistence pipeline.
 
 ---
 
-## 🧭 Table of contents
+## 🧭 Table of Contents
 
-- [High-level architecture current implementation](#-high-level-architecture-current-implementation)
-- [Architecture explanation step-by-step](#-architecture-explanation-step-by-step)
-- [Future-state architecture roadmap](#-future-state-architecture-roadmap)
-- [Technology stack](#-technology-stack)
-- [Ports and services](#-ports-and-services)
-- [Repository structure](#-repository-structure)
-- [Quick start one command](#-quick-start-one-command)
-- [Verify after running](#-verify-after-running)
-- [Stop and reset](#-stop-and-reset)
-- [Service breakdown](#-service-breakdown)
-- [Developer experience local development](#-developer-experience-local-development)
-- [CI/CD workflows planned](#-cicd-workflows-planned)
-- [Deployment current and planned](#-deployment-current-and-planned)
-- [Production hardening planned](#-production-hardening-planned)
-- [Observability planned](#-observability-planned)
-- [Future enhancements](#-future-enhancements)
-- [License](#-license)
+- High-level architecture (current)
+- Architecture explanation (step-by-step)
+- Future-state architecture roadmap
+- Technology stack
+- Ports and services
+- Repository structure
+- Quick start (one command)
+- Verify after running
+- Stop and reset
+- Service breakdown
+- Developer experience (local development)
+- CI/CD workflows (planned)
+- Deployment (current and planned)
+- Production hardening (planned)
+- Observability (planned)
+- Future enhancements
+- License
 
 ---
 
-## 🏗️ High-level architecture current implementation
+## 🏗️ High-level architecture (current implementation)
 
 ```text
 Client (curl / scripts / agents)
@@ -105,142 +105,100 @@ PostgreSQL
 
 ---
 
-## 🧠 Architecture explanation step-by-step
+## 🧠 Architecture explanation (step-by-step)
 
 ### 1️⃣ Client
-
-- **Represents:** VPN gateways, authentication servers, firewalls, cloud services, apps.
-- **Responsibility:** Send logs as JSON payloads over HTTP.
+- Represents VPN gateways, authentication servers, firewalls, cloud services, applications
+- Sends logs as JSON payloads over HTTP
 
 ### 2️⃣ Ingest service (FastAPI)
+- Validates incoming payloads
+- Normalizes logs into a consistent event model
+- Assigns a unique `event_id`
+- Publishes events to Kafka topic `logs.raw`
 
-- **Responsibilities:**
-  - **Validate:** Validate incoming payload structure.
-  - **Normalize:** Normalize logs into a consistent event model.
-  - **Identify:** Assign a unique `event_id`.
-  - **Publish:** Publish normalized events to Kafka topic `logs.raw`.
-- **Why it matters:**
-  - **Decoupling:** Producers are decoupled from consumers.
-  - **Scale:** Ingest can scale independently.
-  - **Resilience:** Kafka buffers spikes and protects downstream services.
+**Why it matters**
+- Decouples producers from consumers
+- Enables independent scaling
+- Kafka buffers spikes and protects downstream services
 
 ### 3️⃣ Kafka / Redpanda
-
-- **Responsibilities:**
-  - **Backbone:** Event streaming backbone.
-  - **Buffering:** Reliable buffering and replay.
-  - **Distribution:** Fan-out to one or more consumers.
+- Event streaming backbone
+- Reliable buffering and replay
+- Fan-out to one or more consumers
 
 ### 4️⃣ Detection service
-
-- **Responsibilities:**
-  - **Consume:** Consume from `logs.raw`.
-  - **Score:** Apply detection rules / scoring.
-  - **Persist:** Write alerts to PostgreSQL.
-  - **Emit:** Optionally emit downstream topics (example: `alerts.scored`).
+- Consumes from `logs.raw`
+- Applies detection rules and scoring
+- Writes alerts to PostgreSQL
+- Optionally emits derived topics (`alerts.scored`)
 
 ### 5️⃣ PostgreSQL
+- Stores normalized events and derived alerts
+- Enables investigation and historical analysis
 
-- **Responsibilities:**
-  - **Store:** Store normalized events + derived alerts.
-  - **Investigate:** Support investigation queries and historical analysis.
-- **Tables:**
-  - **events:** Normalized raw logs.
-  - **alerts:** Scored detections / security signals.
+---
 
-## 🧭 Future-state architecture roadmap
-
-This section is the **target architecture** for agentic, LLM-powered evolution.
-
-### High-level system architecture vision
+## 🧭 Future-state architecture roadmap (vision)
 
 ```mermaid
 flowchart LR
   subgraph Client
     UI(Web UI / CLI)
   end
-
   subgraph API["API Layer"]
     GW(API Gateway)
     BE(FastAPI Backend)
   end
-
   subgraph Data["Data Layer"]
     VDB[(Vector DB)]
     DB[(PostgreSQL)]
     MQ[(Message Queue)]
     OBJ[(Object Storage)]
   end
-
   subgraph Processing["Processing Layer"]
-    ING(Ingestion Pipeline)
-    DET(Detection Engine)
-    AG(Agentic Reasoning Engine)
+    ING(Ingestion)
+    DET(Detection)
+    AG(Agentic Reasoning)
     WF(Workflow Orchestrator)
   end
-
   UI --> GW --> BE
-  BE --> ING
-  BE --> DET
-  BE --> AG
-  BE --> WF
-
-  ING --> MQ
-  DET --> MQ
-  AG --> MQ
-  WF --> MQ
-
-  MQ --> BE
-  BE --> VDB
-  BE --> DB
-  BE --> OBJ
+  BE --> ING --> MQ
+  MQ --> DET --> MQ
+  MQ --> AG --> MQ
+  MQ --> WF --> API
 ```
-### Data flow overview vision
-```mermaid
-sequenceDiagram
-  participant Src as Log Sources
-  participant ING as Ingestion Pipeline
-  participant MQ as Message Queue
-  participant DET as Detection Engine
-  participant AG as Agentic Engine
-  participant WF as Workflow Engine
-  participant API as API Backend
 
-  Src->>ING: Send logs / alerts / telemetry
-  ING->>MQ: Normalize + publish events
-  MQ->>DET: Trigger detection rules
-  DET->>MQ: Emit detection results
-  MQ->>AG: Request reasoning + enrichment
-  AG->>MQ: Emit triage decisions
-  MQ->>WF: Trigger remediation workflow
-  WF->>API: Update status / artifacts
-```
+---
+
 ## 🔐 Technology stack
 
-### Backend and streaming
+### Backend & streaming
+- Python 3.12
+- FastAPI
+- Redpanda (Kafka-compatible)
+- PostgreSQL
 
-- **Language:** Python 3.12
-- **API framework:** FastAPI
-- **Streaming:** Redpanda (Kafka-compatible)
-- **Database:** PostgreSQL
+### Tooling & infrastructure
+- Docker & Docker Compose
+- Poetry
+- VS Code
 
-### Tooling and infrastructure
-
-- **Containers:** Docker, Docker Compose
-- **Python env:** Poetry
-- **Dev:** VS Code (recommended)
+---
 
 ## 🔌 Ports and services
 
-| Service | Description | Port | Access |
-|---|---|---:|---|
-| Ingest Service | Log ingestion API | 8001 | `http://127.0.0.1:8001` |
-| Detection Service | Detection + Kafka consumer API | 8002 | `http://127.0.0.1:8002` |
-| Redpanda (Kafka) | Streaming broker | 9092 | PLAINTEXT |
-| Redpanda HTTP API | Broker admin | 8082 | `http://127.0.0.1:8082` |
-| Redpanda Console | Kafka UI | 8080 | `http://127.0.0.1:8080` |
-| PostgreSQL | Events & alerts DB | 5432 | `cloudops` database |
-| MLflow | Experiment tracking | 5001 | `http://127.0.0.1:5001` |
+| Service | Port | Purpose |
+|------|----:|------|
+| Ingest Service | 8001 | Log ingestion API |
+| Detection Service | 8002 | Detection + Kafka consumer |
+| Redpanda (Kafka) | 9092 | Streaming broker |
+| Redpanda Console | 8080 | Kafka UI |
+| Redpanda HTTP API | 8082 | Broker admin |
+| PostgreSQL | 5432 | Events & alerts DB |
+| MLflow | 5001 | Experiment tracking |
+
+---
 
 ## 📂 Repository structure
 
@@ -252,175 +210,134 @@ secure-agentic-cloudops-siem-platform/
 ├── .gitignore
 ├── services/
 │   ├── ingest-service/
-│   │   ├── app/
-│   │   │   └── main.py
-│   │   └── pyproject.toml
 │   └── detection-service/
-│       ├── app/
-│       │   └── main.py
-│       └── pyproject.toml
 ├── scripts/
 │   ├── run_all.sh
 │   ├── stop_all.sh
 │   ├── reset_all.sh
 │   └── seed_sample_events.py
 └── docs/
-
 ```
 
-## 🧩 Service Breakdown
+---
 
-Each major component is modular and independently deployable.  
-Click to expand each section for details.
+## ⚡ Quick start (one command)
+
+```bash
+bash scripts/run_all.sh
+```
+
+This will:
+- Start Docker infrastructure
+- Create database tables
+- Start ingest and detection services
+- Send sample events
+- Verify Kafka and PostgreSQL
 
 ---
 
+## 🔎 Verify after running
+
+```bash
+curl http://127.0.0.1:8001/health
+curl http://127.0.0.1:8002/health
+```
+
+```bash
+docker exec -it secure-agentic-cloudops-siem-platform-postgres-1 \
+psql -U app -d cloudops -c "SELECT COUNT(*) FROM alerts;"
+```
+
+---
+
+## 🛑 Stop and reset
+
+```bash
+bash scripts/stop_all.sh
+```
+
+```bash
+bash scripts/reset_all.sh
+```
+
+---
+
+## 🧩 Service breakdown
+
+> Sections below marked **(Planned)** describe future roadmap components.
+
 <details>
-<summary><strong>🧩 Ingestion Pipeline</strong></summary>
+<summary><strong>🧠 Agentic Reasoning Engine (Planned)</strong></summary>
+LLM-powered reasoning, enrichment, and triage.
+</details>
 
-**Purpose:**  
-Handles log, alert, and telemetry ingestion from multiple sources.
-
-**Modules:**  
-- `parsers/` — Source‑specific parsers  
-- `normalizers/` — Schema normalization  
-- `enrichers/` — Metadata enrichment  
-- `publishers/` — Event dispatch to message queue  
-
-**Supported Sources:**  
-- Cloud provider logs  
-- Security alerts  
-- Application telemetry  
-- Custom connectors  
-
-**Output:**  
-Normalized events published to `Message Queue`
-
+<details>
+<summary><strong>⚙️ Workflow Orchestrator (Planned)</strong></summary>
+Automated remediation workflows.
 </details>
 
 ---
 
-<details>
-<summary><strong>🧠 Agentic Reasoning Engine</strong></summary>
+## 🧑‍💻 Developer experience (local development)
 
-**Purpose:**  
-Uses LLMs to reason over events, enrich context, and generate triage decisions.
-
-**Modules:**  
-- `context_builder/` — Builds event context  
-- `retriever/` — Vector DB retrieval  
-- `llm_core/` — LLM reasoning logic  
-- `policy_engine/` — Decision policies  
-- `action_generator/` — Suggested actions  
-
-**LLM Providers:**  
-- OpenAI  
-- Azure OpenAI  
-- Anthropic  
-- Local models (via Ollama)  
-
-**Output:**  
-Triage decisions and suggested actions published to `Message Queue`
-
-</details>
+- Python virtual environments managed via Poetry
+- Services run independently for local iteration
+- Hot reload enabled via `uvicorn --reload`
+- Docker used only for shared infrastructure
 
 ---
 
-<details>
-<summary><strong>🔍 Detection Engine</strong></summary>
+## 🔄 CI/CD workflows (planned)
 
-**Purpose:**  
-Applies detection rules and correlation logic to incoming events.
-
-**Modules:**  
-- `rules/` — YAML‑based detection rules  
-- `correlators/` — Multi‑event correlation  
-- `matchers/` — Signature and anomaly matching  
-- `emitters/` — Detection result publishing  
-
-**Rule Packs:**  
-- MITRE ATT&CK  
-- Cloud misconfigurations  
-- Custom rules  
-
-**Output:**  
-Detection results published to `Message Queue`
-
-</details>
+- GitHub Actions
+- Linting (Black, Ruff)
+- Unit tests (pytest)
+- Security scanning (SAST, secrets)
+- Docker image builds
 
 ---
 
-<details>
-<summary><strong>📚 Vector Knowledge Layer</strong></summary>
+## 🚀 Deployment (current and planned)
 
-**Purpose:**  
-Stores embeddings of documentation, runbooks, and prior incidents for retrieval.
+### Current
+- Local Docker Compose deployment
 
-**Modules:**  
-- `indexers/` — Embedding + ingestion  
-- `retrievers/` — Query‑time retrieval  
-- `chunkers/` — Text chunking strategies  
-- `embedders/` — OpenAI / HuggingFace / Cohere  
-
-**Sources:**  
-- Markdown docs  
-- PDFs  
-- Incident timelines  
-- External APIs  
-
-**Output:**  
-Contextual data for agentic reasoning
-
-</details>
+### Planned
+- AWS (ECS / EKS)
+- GCP (GKE)
+- Terraform-based IaC
 
 ---
 
-<details>
-<summary><strong>⚙️ Workflow Orchestrator</strong></summary>
+## 🔐 Production hardening (planned)
 
-**Purpose:**  
-Executes multi‑step remediation workflows triggered by agentic decisions.
-
-**Modules:**  
-- `triggers/` — Event‑based triggers  
-- `steps/` — Declarative step definitions  
-- `executors/` — Cloud API calls  
-- `notifiers/` — Slack / Email / PagerDuty  
-
-**Supported Actions:**  
-- Quarantine instance  
-- Rotate credentials  
-- Block IP  
-- Notify team  
-
-**Output:**  
-Remediation status updates
-
-</details>
+- TLS everywhere
+- Secrets management
+- Kafka partitioning
+- Database indexing
+- Rate limiting
+- RBAC
 
 ---
 
-<details>
-<summary><strong>🌐 API Gateway & Backend</strong></summary>
+## 📊 Observability (planned)
 
-**Purpose:**  
-Exposes REST API for orchestration, status, and integrations.
+- Structured logging
+- Prometheus metrics
+- Grafana dashboards
+- OpenTelemetry tracing
 
-**Modules:**  
-- `routes/` — FastAPI endpoints  
-- `services/` — Business logic  
-- `auth/` — JWT / OAuth2  
-- `docs/` — OpenAPI auto‑docs  
+---
 
-**Endpoints:**  
-- `/ingest`  
-- `/detect`  
-- `/reason`  
-- `/workflow`  
-- `/status`  
-- `/health`  
+## 🚧 Future enhancements
 
-**Output:**  
-Unified API surface for all services
+- Agentic remediation
+- Cross-event correlation
+- Threat intelligence enrichment
+- Multi-tenant support
 
-</details>
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License**.
