@@ -1,5 +1,7 @@
 # 🔐 Secure Agentic CloudOps SIEM Platform
 
+![Python CI](https://github.com/virinchisai/secure-agentic-cloudops-siem-platform/actions/workflows/python-app.yml/badge.svg)
+
 A cloud-native, event-driven **SIEM-style security and CloudOps platform** that demonstrates **log ingestion, streaming pipelines, detection engineering, and scalable backend system design**.
 
 This project simulates how modern security platforms ingest logs, process them in real time, detect suspicious activity, and persist alerts for investigation — while also outlining a clear roadmap toward **agentic, LLM-powered security automation**.
