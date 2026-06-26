@@ -1,345 +1,170 @@
-# 🔐 Secure Agentic CloudOps SIEM Platform
+# Secure Agentic CloudOps SIEM Platform
 
-![Python CI](https://github.com/virinchisai/secure-agentic-cloudops-siem-platform/actions/workflows/python-app.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/api-FastAPI-009688)
+![Streaming](https://img.shields.io/badge/streaming-Redpanda%20%7C%20Kafka-EA580C)
+![Database](https://img.shields.io/badge/database-PostgreSQL-336791)
+![Deployment](https://img.shields.io/badge/runtime-Docker-2496ED)
 
-A cloud-native, event-driven **SIEM-style security and CloudOps platform** that demonstrates **log ingestion, streaming pipelines, detection engineering, and scalable backend system design**.
+Secure Agentic CloudOps SIEM Platform is a cloud-native, event-driven security platform that demonstrates how logs can be ingested, streamed, detected, and persisted through a decoupled microservice architecture. It is designed as a credible SIEM-style backend with a forward path toward AI-assisted triage, retrieval, and agentic security workflows.
 
-This project simulates how modern security platforms ingest logs, process them in real time, detect suspicious activity, and persist alerts for investigation — while also outlining a clear roadmap toward **agentic, LLM-powered security automation**.
+## Overview
 
----
+This repository focuses on the system design layer behind modern security analytics platforms. The current implementation provides working ingestion, Kafka-compatible event streaming through Redpanda, a detection service, and PostgreSQL-backed alert persistence.
 
-## 📛 Badges
+The project intentionally separates what is already implemented from what is planned next. Today it demonstrates a practical event pipeline. Longer term it serves as a foundation for AI agents, contextual retrieval, and automated response workflows in a secure CloudOps or SIEM environment.
 
-<p align="left">
-  <img src="https://img.shields.io/github/languages/top/virinchisai/secure-agentic-cloudops-siem-platform" />
-  <img src="https://img.shields.io/github/repo-size/virinchisai/secure-agentic-cloudops-siem-platform" />
-  <img src="https://img.shields.io/badge/Code%20Style-Black-000000" />
-</p>
-
-> Badges reflect repository metadata only.  
-> CI/CD, tests, SAST, secrets scanning, and docs badges will be enabled once workflows are implemented.
-
----
-
-## 🎯 Project Objectives
-
-- **Ingest logs:** Accept raw security logs through a REST API.
-- **Stream events:** Stream logs using Kafka-compatible infrastructure (Redpanda).
-- **Detect in real time:** Apply detection logic and scoring as events flow through the system.
-- **Persist signals:** Store normalized events and alerts in PostgreSQL for investigation.
-- **Support investigation:** Enable query-driven validation and basic investigation workflows.
-- **Show system design:** Demonstrate production-grade, decoupled microservice architecture.
-- **Enable a roadmap:** Provide a clear path to agentic security automation.
-
----
-
-## 🚧 Implementation Status
-
-This repository intentionally includes **both implemented components and a forward-looking architecture**.
-
-### ✅ Implemented (fully working)
-
-- Ingest service (FastAPI)
-- Kafka-compatible streaming (Redpanda)
-- Detection service consuming Kafka events
-- PostgreSQL persistence for events and alerts
-- End-to-end data flow validation
-- One-command local execution (`scripts/run_all.sh`)
-- Dockerized infrastructure
-
-### 🧭 Planned / roadmap
-
-- Agentic LLM reasoning engine
-- Vector knowledge base for contextual retrieval
-- Automated remediation workflows
-- API gateway with authentication (JWT / OAuth / RBAC)
-- SIEM dashboards and visualizations
-- Cloud deployment (AWS / GCP)
-- CI/CD pipelines (tests, SAST, secrets scanning)
-
-> ⚠️ **Scope note**  
-> Advanced components described later in this README represent **architectural intent and future roadmap**.  
-> The current implementation focuses on a production-grade ingestion, streaming, detection, and persistence pipeline.
-
----
-
-## 🧭 Table of Contents
-
-- High-level architecture (current)
-- Architecture explanation (step-by-step)
-- Future-state architecture roadmap
-- Technology stack
-- Ports and services
-- Repository structure
-- Quick start (one command)
-- Verify after running
-- Stop and reset
-- Service breakdown
-- Developer experience (local development)
-- CI/CD workflows (planned)
-- Deployment (current and planned)
-- Production hardening (planned)
-- Observability (planned)
-- Future enhancements
-- License
-
----
-
-## 🏗️ High-level architecture (current implementation)
-
-```text
-Client (curl / scripts / agents)
-        |
-        v
-Ingest Service (FastAPI)
-        |
-        v
-Kafka / Redpanda (topic: logs.raw)
-        |
-        v
-Detection Service (Kafka Consumer)
-        |
-        v
-PostgreSQL
-   ├── events   (normalized logs)
-   └── alerts   (scored detections)
-```
-
----
-
-## 🧠 Architecture explanation (step-by-step)
-
-### 1️⃣ Client
-- Represents VPN gateways, authentication servers, firewalls, cloud services, applications
-- Sends logs as JSON payloads over HTTP
-
-### 2️⃣ Ingest service (FastAPI)
-- Validates incoming payloads
-- Normalizes logs into a consistent event model
-- Assigns a unique `event_id`
-- Publishes events to Kafka topic `logs.raw`
-
-**Why it matters**
-- Decouples producers from consumers
-- Enables independent scaling
-- Kafka buffers spikes and protects downstream services
-
-### 3️⃣ Kafka / Redpanda
-- Event streaming backbone
-- Reliable buffering and replay
-- Fan-out to one or more consumers
-
-### 4️⃣ Detection service
-- Consumes from `logs.raw`
-- Applies detection rules and scoring
-- Writes alerts to PostgreSQL
-- Optionally emits derived topics (`alerts.scored`)
-
-### 5️⃣ PostgreSQL
-- Stores normalized events and derived alerts
-- Enables investigation and historical analysis
-
----
-
-## 🧭 Future-state architecture roadmap (vision)
+## Architecture Diagram
 
 ```mermaid
 flowchart LR
-  subgraph Client
-    UI(Web UI / CLI)
-  end
-  subgraph API["API Layer"]
-    GW(API Gateway)
-    BE(FastAPI Backend)
-  end
-  subgraph Data["Data Layer"]
-    VDB[(Vector DB)]
-    DB[(PostgreSQL)]
-    MQ[(Message Queue)]
-    OBJ[(Object Storage)]
-  end
-  subgraph Processing["Processing Layer"]
-    ING(Ingestion)
-    DET(Detection)
-    AG(Agentic Reasoning)
-    WF(Workflow Orchestrator)
-  end
-  UI --> GW --> BE
-  BE --> ING --> MQ
-  MQ --> DET --> MQ
-  MQ --> AG --> MQ
-  MQ --> WF --> API
+    producer["Clients / Log Sources"] --> ingest["FastAPI Ingest Service"]
+    ingest --> stream["Redpanda / Kafka Topic"]
+    stream --> detect["Detection Service"]
+    detect --> db["PostgreSQL"]
+    db --> alerts["Events and Alerts"]
+    detect -. roadmap .-> agent["Future AI Agent Layer"]
+    agent -. roadmap .-> actions["Investigation and Response Workflows"]
 ```
 
----
+## Features
 
-## 🔐 Technology stack
+- Event-driven architecture for ingesting and processing security events
+- FastAPI ingestion service for accepting normalized log payloads
+- Redpanda or Kafka-compatible event backbone for decoupled processing
+- Detection engine that consumes events and produces scored alerts
+- PostgreSQL persistence for normalized events and detection results
+- Dockerized local environment for end-to-end testing and demos
+- Clear separation between implemented platform components and future AI agent roadmap
+- Cloud-native SIEM design that can evolve into contextual triage and remediation workflows
 
-### Backend & streaming
-- Python 3.12
-- FastAPI
-- Redpanda (Kafka-compatible)
-- PostgreSQL
+## Tech Stack
 
-### Tooling & infrastructure
-- Docker & Docker Compose
-- Poetry
-- VS Code
+| Layer | Technologies |
+| --- | --- |
+| API and services | FastAPI, Python 3.12 |
+| Streaming | Redpanda, Kafka-compatible messaging |
+| Persistence | PostgreSQL |
+| Infra and packaging | Docker, Docker Compose, Poetry |
+| Design direction | Detection engineering, event-driven systems, future AI agent integration |
 
----
-
-## 🔌 Ports and services
-
-| Service | Port | Purpose |
-|------|----:|------|
-| Ingest Service | 8001 | Log ingestion API |
-| Detection Service | 8002 | Detection + Kafka consumer |
-| Redpanda (Kafka) | 9092 | Streaming broker |
-| Redpanda Console | 8080 | Kafka UI |
-| Redpanda HTTP API | 8082 | Broker admin |
-| PostgreSQL | 5432 | Events & alerts DB |
-| MLflow | 5001 | Experiment tracking |
-
----
-
-## 📂 Repository structure
+## Project Structure
 
 ```text
 secure-agentic-cloudops-siem-platform/
-├── docker-compose.yml
-├── README.md
-├── LICENSE
-├── .gitignore
-├── services/
-│   ├── ingest-service/
-│   └── detection-service/
-├── scripts/
-│   ├── run_all.sh
-│   ├── stop_all.sh
-│   ├── reset_all.sh
-│   └── seed_sample_events.py
-└── docs/
+|-- docker-compose.yml
+|-- README.md
+|-- pyproject.toml
+|-- services/
+|   |-- ingest-service/
+|   |   |-- app/
+|   |   |   `-- main.py
+|   |   |-- pyproject.toml
+|   |   `-- README.md
+|   `-- detection-service/
+|       |-- app/
+|       |   `-- main.py
+|       |-- pyproject.toml
+|       `-- README.md
+|-- scripts/
+|   |-- run_all.sh
+|   |-- stop_all.sh
+|   |-- reset_all.sh
+|   `-- seed_sample_events.py
+`-- docs/
 ```
 
----
+## Installation
 
-## ⚡ Quick start (one command)
+### Prerequisites
+
+- Docker Desktop or a compatible Docker runtime
+- Python 3.12 if you want to run services outside containers
+
+### Setup
+
+```bash
+git clone https://github.com/virinchisai/secure-agentic-cloudops-siem-platform.git
+cd secure-agentic-cloudops-siem-platform
+```
+
+## Quick Start
+
+Run the full platform locally:
 
 ```bash
 bash scripts/run_all.sh
 ```
 
-This will:
-- Start Docker infrastructure
-- Create database tables
-- Start ingest and detection services
-- Send sample events
-- Verify Kafka and PostgreSQL
+This starts:
 
----
+- Ingest service on `http://127.0.0.1:8001`
+- Detection service on `http://127.0.0.1:8002`
+- Redpanda broker and console
+- PostgreSQL for event and alert persistence
 
-## 🔎 Verify after running
+Verify the services:
 
 ```bash
 curl http://127.0.0.1:8001/health
 curl http://127.0.0.1:8002/health
 ```
 
+Check persisted alerts:
+
 ```bash
 docker exec -it secure-agentic-cloudops-siem-platform-postgres-1 \
 psql -U app -d cloudops -c "SELECT COUNT(*) FROM alerts;"
 ```
 
----
-
-## 🛑 Stop and reset
+Stop the environment:
 
 ```bash
 bash scripts/stop_all.sh
 ```
 
+Reset containers and local state:
+
 ```bash
 bash scripts/reset_all.sh
 ```
 
----
+## Screenshots
 
-## 🧩 Service breakdown
+Screenshots can be added here to show:
 
-> Sections below marked **(Planned)** describe future roadmap components.
+- Event ingestion requests
+- Redpanda console topics and throughput
+- Detection results in PostgreSQL
+- Future dashboard or investigation UI
 
-<details>
-<summary><strong>🧠 Agentic Reasoning Engine (Planned)</strong></summary>
-LLM-powered reasoning, enrichment, and triage.
-</details>
+Placeholder:
 
-<details>
-<summary><strong>⚙️ Workflow Orchestrator (Planned)</strong></summary>
-Automated remediation workflows.
-</details>
+```text
+docs/screenshots/
+|-- ingest-api.png
+|-- redpanda-console.png
+|-- alerts-table.png
+`-- dashboard.png
+```
 
----
+## Future Roadmap
 
-## 🧑‍💻 Developer experience (local development)
+- AI agent layer for triage, correlation, and investigation support
+- Retrieval-backed context for alerts and prior incident knowledge
+- Automated remediation workflows and response orchestration
+- Authentication and authorization with JWT, OAuth, or RBAC
+- Observability with Prometheus, Grafana, and structured tracing
+- Cloud deployment on AWS or GCP with production-grade hardening
+- CI/CD workflows for testing, linting, image builds, and security scanning
+- Multi-tenant platform controls and stronger retention policies
 
-- Python virtual environments managed via Poetry
-- Services run independently for local iteration
-- Hot reload enabled via `uvicorn --reload`
-- Docker used only for shared infrastructure
+## Design Notes
 
----
+- The current implementation intentionally emphasizes a strong backbone first: ingestion, streaming, detection, and persistence.
+- AI agent integration is part of the roadmap, not a completed feature today.
+- The repository is positioned as a platform foundation for secure, AI-assisted operations rather than a finished enterprise SIEM product.
 
-## 🔄 CI/CD workflows (planned)
+## License
 
-- GitHub Actions
-- Linting (Black, Ruff)
-- Unit tests (pytest)
-- Security scanning (SAST, secrets)
-- Docker image builds
-
----
-
-## 🚀 Deployment (current and planned)
-
-### Current
-- Local Docker Compose deployment
-
-### Planned
-- AWS (ECS / EKS)
-- GCP (GKE)
-- Terraform-based IaC
-
----
-
-## 🔐 Production hardening (planned)
-
-- TLS everywhere
-- Secrets management
-- Kafka partitioning
-- Database indexing
-- Rate limiting
-- RBAC
-
----
-
-## 📊 Observability (planned)
-
-- Structured logging
-- Prometheus metrics
-- Grafana dashboards
-- OpenTelemetry tracing
-
----
-
-## 🚧 Future enhancements
-
-- Agentic remediation
-- Cross-event correlation
-- Threat intelligence enrichment
-- Multi-tenant support
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License**.
+This project is licensed under the [MIT License](LICENSE).
