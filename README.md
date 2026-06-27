@@ -16,8 +16,7 @@ This project simulates how modern security platforms ingest logs, process them i
   <img src="https://img.shields.io/badge/Code%20Style-Black-000000" />
 </p>
 
-> Badges reflect repository metadata only.  
-> CI/CD, tests, SAST, secrets scanning, and docs badges will be enabled once workflows are implemented.
+> CI runs lint (Ruff + Black), unit tests (pytest), SAST (Bandit), secrets scanning, and Docker builds on every push and PR to `main`.
 
 ---
 
@@ -39,13 +38,16 @@ This repository intentionally includes **both implemented components and a forwa
 
 ### ✅ Implemented (fully working)
 
-- Ingest service (FastAPI)
+- Ingest service (FastAPI) with validation and batch ingestion
 - Kafka-compatible streaming (Redpanda)
-- Detection service consuming Kafka events
-- PostgreSQL persistence for events and alerts
-- End-to-end data flow validation
+- Detection service with multi-rule engine (brute force, privilege escalation, data exfiltration, suspicious network, severity-based)
+- PostgreSQL persistence for events and alerts with indexed queries
+- Investigation API (query alerts, events, stats, update alert status)
+- End-to-end data flow validation with 12 realistic sample events
 - One-command local execution (`scripts/run_all.sh`)
-- Dockerized infrastructure
+- Fully Dockerized infrastructure and services
+- CI/CD pipeline with linting (Ruff, Black), unit tests, SAST (Bandit), secrets scanning, and Docker builds
+- 18 unit tests across both services
 
 ### 🧭 Planned / roadmap
 
@@ -55,7 +57,6 @@ This repository intentionally includes **both implemented components and a forwa
 - API gateway with authentication (JWT / OAuth / RBAC)
 - SIEM dashboards and visualizations
 - Cloud deployment (AWS / GCP)
-- CI/CD pipelines (tests, SAST, secrets scanning)
 
 > ⚠️ **Scope note**  
 > Advanced components described later in this README represent **architectural intent and future roadmap**.  
@@ -210,14 +211,31 @@ secure-agentic-cloudops-siem-platform/
 ├── README.md
 ├── LICENSE
 ├── .gitignore
+├── pyproject.toml
+├── .github/workflows/
+│   └── python-app.yml          # CI/CD pipeline
 ├── services/
 │   ├── ingest-service/
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   ├── app/
+│   │   │   └── main.py         # FastAPI ingest endpoints
+│   │   └── tests/
+│   │       └── test_ingest.py
 │   └── detection-service/
+│       ├── Dockerfile
+│       ├── pyproject.toml
+│       ├── app/
+│       │   ├── main.py          # FastAPI detection + query endpoints
+│       │   └── rules.py         # Detection rules engine
+│       └── tests/
+│           └── test_rules.py
 ├── scripts/
-│   ├── run_all.sh
-│   ├── stop_all.sh
-│   ├── reset_all.sh
-│   └── seed_sample_events.py
+│   ├── run_all.sh               # One-command startup
+│   ├── stop_all.sh              # Graceful shutdown
+│   ├── reset_all.sh             # Full reset (volumes + images)
+│   ├── init_db.sql              # PostgreSQL schema
+│   └── seed_sample_events.py    # Sample security events
 └── docs/
 ```
 
@@ -289,13 +307,14 @@ Automated remediation workflows.
 
 ---
 
-## 🔄 CI/CD workflows (planned)
+## 🔄 CI/CD workflows
 
-- GitHub Actions
-- Linting (Black, Ruff)
-- Unit tests (pytest)
-- Security scanning (SAST, secrets)
-- Docker image builds
+Implemented via GitHub Actions (`.github/workflows/python-app.yml`):
+
+- **Lint** — Ruff and Black format checks
+- **Test** — pytest suites for ingest-service and detection-service (run in parallel)
+- **Security** — Bandit SAST scan + grep-based secrets detection
+- **Docker build** — Validates both service images build successfully
 
 ---
 
