@@ -9,13 +9,17 @@ from typing import Optional
 
 import psycopg
 from confluent_kafka import Consumer
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 
 from app.rules import evaluate
 
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BROKER", "127.0.0.1:9092")
 TOPIC = "logs.raw"
 PG_DSN = os.getenv("PG_DSN", "postgresql://app:app@127.0.0.1:5432/cloudops")
+
+
+def _get_conn():
+    return psycopg.connect(PG_DSN, autocommit=True)
 
 
 def consume_forever():
@@ -31,7 +35,7 @@ def consume_forever():
     )
     consumer.subscribe([TOPIC])
 
-    conn = psycopg.connect(PG_DSN, autocommit=True)
+    conn = _get_conn()
     print("Postgres connected OK")
 
     while True:
@@ -110,26 +114,25 @@ def list_alerts(
     min_score: float = Query(0.0),
     limit: int = Query(50, le=500),
 ):
-    conn = psycopg.connect(PG_DSN, autocommit=True)
-    query = "SELECT alert_id, event_id, score, label, status, model_version, created_at FROM alerts WHERE score >= %s"
-    params: list = [min_score]
+    with _get_conn() as conn:
+        query = "SELECT alert_id, event_id, score, label, status, model_version, created_at FROM alerts WHERE score >= %s"
+        params: list = [min_score]
 
-    if status:
-        query += " AND status = %s"
-        params.append(status)
-    if label:
-        query += " AND label = %s"
-        params.append(label)
+        if status:
+            query += " AND status = %s"
+            params.append(status)
+        if label:
+            query += " AND label = %s"
+            params.append(label)
 
-    query += " ORDER BY created_at DESC LIMIT %s"
-    params.append(limit)
+        query += " ORDER BY created_at DESC LIMIT %s"
+        params.append(limit)
 
-    with conn.cursor() as cur:
-        cur.execute(query, params)
-        rows = cur.fetchall()
-        columns = [desc[0] for desc in cur.description]
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            columns = [desc[0] for desc in cur.description]
 
-    conn.close()
     return {"count": len(rows), "alerts": [dict(zip(columns, row)) for row in rows]}
 
 
@@ -139,50 +142,46 @@ def list_events(
     source: Optional[str] = Query(None),
     limit: int = Query(50, le=500),
 ):
-    conn = psycopg.connect(PG_DSN, autocommit=True)
-    query = "SELECT event_id, ts, source, log_type, severity, message, fields, created_at FROM events WHERE 1=1"
-    params: list = []
+    with _get_conn() as conn:
+        query = "SELECT event_id, ts, source, log_type, severity, message, fields, created_at FROM events WHERE 1=1"
+        params: list = []
 
-    if severity:
-        query += " AND severity = %s"
-        params.append(severity)
-    if source:
-        query += " AND source = %s"
-        params.append(source)
+        if severity:
+            query += " AND severity = %s"
+            params.append(severity)
+        if source:
+            query += " AND source = %s"
+            params.append(source)
 
-    query += " ORDER BY ts DESC LIMIT %s"
-    params.append(limit)
+        query += " ORDER BY ts DESC LIMIT %s"
+        params.append(limit)
 
-    with conn.cursor() as cur:
-        cur.execute(query, params)
-        rows = cur.fetchall()
-        columns = [desc[0] for desc in cur.description]
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            columns = [desc[0] for desc in cur.description]
 
-    conn.close()
     return {"count": len(rows), "events": [dict(zip(columns, row)) for row in rows]}
 
 
 @app.get("/alerts/{alert_id}")
 def get_alert(alert_id: str):
-    conn = psycopg.connect(PG_DSN, autocommit=True)
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT a.alert_id, a.event_id, a.score, a.label, a.status, a.model_version, a.created_at,
-                   e.source, e.log_type, e.severity, e.message, e.fields
-            FROM alerts a JOIN events e ON a.event_id = e.event_id
-            WHERE a.alert_id = %s
-            """,
-            (alert_id,),
-        )
-        row = cur.fetchone()
-        if not row:
-            conn.close()
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="Alert not found")
-        columns = [desc[0] for desc in cur.description]
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT a.alert_id, a.event_id, a.score, a.label, a.status, a.model_version, a.created_at,
+                       e.source, e.log_type, e.severity, e.message, e.fields
+                FROM alerts a JOIN events e ON a.event_id = e.event_id
+                WHERE a.alert_id = %s
+                """,
+                (alert_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Alert not found")
+            columns = [desc[0] for desc in cur.description]
 
-    conn.close()
     return dict(zip(columns, row))
 
 
@@ -190,41 +189,37 @@ def get_alert(alert_id: str):
 def update_alert_status(alert_id: str, status: str = Query(...)):
     valid = {"new", "investigating", "resolved", "false_positive"}
     if status not in valid:
-        from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=f"Status must be one of {valid}")
 
-    conn = psycopg.connect(PG_DSN, autocommit=True)
-    with conn.cursor() as cur:
-        cur.execute(
-            "UPDATE alerts SET status = %s WHERE alert_id = %s RETURNING alert_id",
-            (status, alert_id),
-        )
-        row = cur.fetchone()
-    conn.close()
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE alerts SET status = %s WHERE alert_id = %s RETURNING alert_id",
+                (status, alert_id),
+            )
+            row = cur.fetchone()
 
     if not row:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Alert not found")
     return {"alert_id": alert_id, "status": status}
 
 
 @app.get("/stats")
 def stats():
-    conn = psycopg.connect(PG_DSN, autocommit=True)
-    with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) FROM events")
-        event_count = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM alerts")
-        alert_count = cur.fetchone()[0]
-        cur.execute(
-            "SELECT label, COUNT(*) FROM alerts GROUP BY label ORDER BY COUNT(*) DESC"
-        )
-        by_label = [{"label": r[0], "count": r[1]} for r in cur.fetchall()]
-        cur.execute(
-            "SELECT status, COUNT(*) FROM alerts GROUP BY status ORDER BY COUNT(*) DESC"
-        )
-        by_status = [{"status": r[0], "count": r[1]} for r in cur.fetchall()]
-    conn.close()
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM events")
+            event_count = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM alerts")
+            alert_count = cur.fetchone()[0]
+            cur.execute(
+                "SELECT label, COUNT(*) FROM alerts GROUP BY label ORDER BY COUNT(*) DESC"
+            )
+            by_label = [{"label": r[0], "count": r[1]} for r in cur.fetchall()]
+            cur.execute(
+                "SELECT status, COUNT(*) FROM alerts GROUP BY status ORDER BY COUNT(*) DESC"
+            )
+            by_status = [{"status": r[0], "count": r[1]} for r in cur.fetchall()]
 
     return {
         "total_events": event_count,

@@ -29,7 +29,7 @@ done
 
 echo ""
 echo "[3/4] Seeding sample events..."
-python scripts/seed_sample_events.py
+python3 scripts/seed_sample_events.py
 
 echo ""
 echo "[4/4] Verification"
