@@ -130,6 +130,34 @@ This repository intentionally includes **both implemented components and a forwa
 
 ## 🏗️ High-level architecture (current implementation)
 
+```mermaid
+flowchart TD
+    Client([📡 Clients<br/>VPN • Firewall • Auth • Cloud])
+    Ingest[Ingest Service<br/>FastAPI :8000]
+    Kafka[(Kafka / Redpanda<br/>topic: logs.raw)]
+    Detect[Detection Service<br/>Kafka Consumer]
+    Events[(PostgreSQL<br/>events table)]
+    Alerts[(PostgreSQL<br/>alerts table)]
+
+    Client -->|HTTP JSON| Ingest
+    Ingest -->|normalize + publish| Kafka
+    Kafka -->|stream consume| Detect
+    Detect -->|store normalized| Events
+    Detect -->|store scored detections| Alerts
+
+    classDef client fill:#FF6B35,stroke:#7c2d12,color:#fff
+    classDef svc fill:#009688,stroke:#0d4f47,color:#fff
+    classDef bus fill:#8b5cf6,stroke:#5b21b6,color:#fff
+    classDef store fill:#336791,stroke:#1e3a5f,color:#fff
+    class Client client
+    class Ingest,Detect svc
+    class Kafka bus
+    class Events,Alerts store
+```
+
+<details>
+<summary><b>📝 ASCII fallback (in case Mermaid doesn't render)</b></summary>
+
 ```text
 Client (curl / scripts / agents)
         |
@@ -147,6 +175,8 @@ PostgreSQL
    ├── events   (normalized logs)
    └── alerts   (scored detections)
 ```
+
+</details>
 
 ---
 
