@@ -1,6 +1,19 @@
 # 🔐 Secure Agentic CloudOps SIEM Platform
 
-![Python CI](https://github.com/virinchisai/secure-agentic-cloudops-siem-platform/actions/workflows/python-app.yml/badge.svg)
+<p align="left">
+  <img src="https://github.com/virinchisai/secure-agentic-cloudops-siem-platform/actions/workflows/python-app.yml/badge.svg" alt="Python CI" />
+  <img src="https://img.shields.io/github/languages/top/virinchisai/secure-agentic-cloudops-siem-platform" alt="Top Language" />
+  <img src="https://img.shields.io/github/repo-size/virinchisai/secure-agentic-cloudops-siem-platform" alt="Repo Size" />
+  <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12" />
+  <img src="https://img.shields.io/badge/FastAPI-0.112-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Kafka-Redpanda-FF6B35?logo=apachekafka&logoColor=white" alt="Redpanda" />
+  <img src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Code%20Style-Black-000000" alt="Code Style" />
+  <img src="https://img.shields.io/badge/Security-Bandit-yellow?logo=python&logoColor=white" alt="Bandit SAST" />
+  <img src="https://img.shields.io/github/license/virinchisai/secure-agentic-cloudops-siem-platform" alt="License" />
+  <img src="https://img.shields.io/github/last-commit/virinchisai/secure-agentic-cloudops-siem-platform" alt="Last Commit" />
+</p>
 
 A cloud-native, event-driven **SIEM-style security and CloudOps platform** that demonstrates **log ingestion, streaming pipelines, detection engineering, and scalable backend system design**.
 
@@ -8,13 +21,42 @@ This project simulates how modern security platforms ingest logs, process them i
 
 ---
 
-## 📛 Badges
+## 📡 Project Status
 
-<p align="left">
-  <img src="https://img.shields.io/github/languages/top/virinchisai/secure-agentic-cloudops-siem-platform" />
-  <img src="https://img.shields.io/github/repo-size/virinchisai/secure-agentic-cloudops-siem-platform" />
-  <img src="https://img.shields.io/badge/Code%20Style-Black-000000" />
-</p>
+<table>
+<tr>
+<td>
+
+### 🟢 Platform Status: **LIVE**
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| Ingest Service | 🟢 Active | FastAPI on `:8001` — validates, normalizes, publishes to Kafka |
+| Detection Engine | 🟢 Active | 5 rules, Kafka consumer, real-time scoring on `:8002` |
+| Streaming (Kafka) | 🟢 Active | Redpanda on `:9092` with Console UI on `:8080` |
+| PostgreSQL | 🟢 Active | Events + alerts persistence on `:5432` |
+| CI/CD Pipeline | 🟢 Active | Lint → Test → SAST → Docker Build |
+| MLflow | 🟢 Active | Experiment tracking on `:5001` |
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 📊 Pipeline Metrics
+
+| Metric | Value |
+|--------|-------|
+| Detection Rules | 5 (severity, brute force, priv escalation, data exfil, suspicious network) |
+| Unit Tests | 18 passing (6 ingest + 12 detection) |
+| Sample Events | 12 realistic security scenarios |
+| Alert Labels | 7 categories |
+| API Endpoints | 9 (health, ingest, batch, alerts, events, stats, alert detail, update, query) |
+| Docker Services | 6 (ingest, detection, redpanda, console, postgres, mlflow) |
+
+</td>
+</tr>
+</table>
 
 > CI runs lint (Ruff + Black), unit tests (pytest), SAST (Bandit), secrets scanning, and Docker builds on every push and PR to `main`.
 
