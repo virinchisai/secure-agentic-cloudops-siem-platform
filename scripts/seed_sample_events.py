@@ -1,6 +1,5 @@
 """Seed the SIEM platform with realistic sample security events."""
 
-import sys
 import time
 
 import requests

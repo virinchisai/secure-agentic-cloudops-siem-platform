@@ -115,7 +115,8 @@ jobs:
         run: |
           # Simple grep-based secrets check
           if grep -rn "password\s*=\s*['\"]" services/ scripts/ --include="*.py" | grep -v "POSTGRES_PASSWORD" | grep -v "test" | grep -v "#"; then
-            echo "WARNING: Possible hardcoded secrets found"
+            echo "ERROR: Possible hardcoded secrets found"
+            exit 1
           else
             echo "No hardcoded secrets detected"
           fi
