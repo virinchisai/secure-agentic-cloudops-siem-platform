@@ -139,13 +139,19 @@ async def _proxy(
 
     body = await request.body()
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        upstream_resp = await client.request(
-            method,
-            url,
-            headers=headers,
-            content=body,
-            params=request.query_params,
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            upstream_resp = await client.request(
+                method,
+                url,
+                headers=headers,
+                content=body,
+                params=request.query_params,
+            )
+    except httpx.RequestError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            content={"detail": f"Upstream service unavailable: {exc}"},
         )
 
     return JSONResponse(
