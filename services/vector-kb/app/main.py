@@ -40,11 +40,14 @@ app = FastAPI(title="vector-kb", version="0.1.0", lifespan=lifespan)
 # Schemas
 # ---------------------------------------------------------------------------
 
+
 class IndexRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Document text to index")
     metadata: dict[str, Any] = Field(default_factory=dict)
     doc_id: str | None = None
-    collection: str = Field(default="alerts", description="Target collection: alerts | threat_intel")
+    collection: str = Field(
+        default="alerts", description="Target collection: alerts | threat_intel"
+    )
 
 
 class IndexResponse(BaseModel):
@@ -65,7 +68,9 @@ class SearchResponse(BaseModel):
 
 
 class ThreatIntelRequest(BaseModel):
-    indicator: str = Field(..., min_length=1, description="IOC value (IP, domain, hash, …)")
+    indicator: str = Field(
+        ..., min_length=1, description="IOC value (IP, domain, hash, …)"
+    )
     intel_type: str = Field(..., description="Type: ip, domain, hash, url, email")
     source: str = Field(default="unknown")
     description: str = Field(default="")
@@ -75,6 +80,7 @@ class ThreatIntelRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
 
 @app.get("/health")
 def health():
@@ -95,7 +101,9 @@ def index_document(req: IndexRequest):
     store = _get_store()
     valid_collections = ("alerts", "threat_intel")
     if req.collection not in valid_collections:
-        raise HTTPException(status_code=400, detail=f"collection must be one of {valid_collections}")
+        raise HTTPException(
+            status_code=400, detail=f"collection must be one of {valid_collections}"
+        )
 
     doc_id = store.index_document(
         text=req.text,

@@ -7,7 +7,9 @@ def _make_alert(label: str, score: float) -> dict:
     return {"alert_id": "test-001", "label": label, "score": score, "status": "new"}
 
 
-def _make_event(severity: str = "high", source: str = "aws-guardduty", message: str = "", **extra) -> dict:
+def _make_event(
+    severity: str = "high", source: str = "aws-guardduty", message: str = "", **extra
+) -> dict:
     return {
         "event_id": "evt-001",
         "severity": severity,

@@ -34,6 +34,7 @@ rate_limiter = RateLimiter()
 # Rate-limit middleware
 # ---------------------------------------------------------------------------
 
+
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
@@ -48,6 +49,7 @@ async def rate_limit_middleware(request: Request, call_next):
 # ---------------------------------------------------------------------------
 # Auth dependency
 # ---------------------------------------------------------------------------
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     credentials_exception = HTTPException(
@@ -83,6 +85,7 @@ def require_role(*allowed_roles: str):
 # Auth endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.post("/auth/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
@@ -100,6 +103,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 # Health
 # ---------------------------------------------------------------------------
 
+
 @app.get("/health")
 async def health():
     return {"status": "healthy", "service": "api-gateway"}
@@ -108,6 +112,7 @@ async def health():
 # ---------------------------------------------------------------------------
 # Proxy helpers
 # ---------------------------------------------------------------------------
+
 
 async def _proxy(
     method: str,
@@ -153,6 +158,7 @@ async def _proxy(
 # Ingest-service proxy
 # ---------------------------------------------------------------------------
 
+
 @app.api_route(
     "/api/ingest/{path:path}",
     methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
@@ -168,6 +174,7 @@ async def proxy_ingest(
 # ---------------------------------------------------------------------------
 # Detection-service proxy
 # ---------------------------------------------------------------------------
+
 
 @app.api_route(
     "/api/detection/{path:path}",

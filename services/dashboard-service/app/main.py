@@ -66,7 +66,11 @@ async def dashboard_data():
             "recent_alerts": alerts.get("alerts", [])[:20],
             "recent_events": events.get("events", [])[:10],
             "detection_rules_active": len(
-                {a.get("model_version") for a in alerts.get("alerts", []) if a.get("model_version")}
+                {
+                    a.get("model_version")
+                    for a in alerts.get("alerts", [])
+                    if a.get("model_version")
+                }
             ),
         }
 

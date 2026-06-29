@@ -80,7 +80,14 @@ def consume_forever():
                     INSERT INTO alerts (alert_id, event_id, score, label, status, model_version)
                     VALUES (%s, %s, %s, %s, %s, %s)
                     """,
-                    (alert_id, event["event_id"], result.score, result.label, "new", result.rule_name),
+                    (
+                        alert_id,
+                        event["event_id"],
+                        result.score,
+                        result.label,
+                        "new",
+                        result.rule_name,
+                    ),
                 )
 
             print(

@@ -9,7 +9,6 @@ from typing import Any
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
-
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "/data/chroma")
 
 # Collection names
@@ -82,12 +81,14 @@ class VectorStore:
         metadatas = results.get("metadatas", [[]])[0]
 
         for i, doc_id in enumerate(ids):
-            out.append({
-                "id": doc_id,
-                "document": documents[i] if i < len(documents) else "",
-                "distance": distances[i] if i < len(distances) else None,
-                "metadata": metadatas[i] if i < len(metadatas) else {},
-            })
+            out.append(
+                {
+                    "id": doc_id,
+                    "document": documents[i] if i < len(documents) else "",
+                    "distance": distances[i] if i < len(distances) else None,
+                    "metadata": metadatas[i] if i < len(metadatas) else {},
+                }
+            )
 
         return out
 

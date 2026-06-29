@@ -32,7 +32,12 @@ async def test_dashboard_page_returns_html():
 
 @pytest.mark.anyio
 async def test_api_dashboard_data_returns_json():
-    mock_stats = {"total_events": 100, "total_alerts": 25, "alerts_by_label": [], "alerts_by_status": []}
+    mock_stats = {
+        "total_events": 100,
+        "total_alerts": 25,
+        "alerts_by_label": [],
+        "alerts_by_status": [],
+    }
     mock_alerts = {"count": 0, "alerts": []}
     mock_events = {"count": 0, "events": []}
 

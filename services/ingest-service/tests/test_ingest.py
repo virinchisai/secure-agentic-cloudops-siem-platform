@@ -10,6 +10,7 @@ def client():
         mock_producer.produce = MagicMock()
         mock_producer.flush = MagicMock()
         from app.main import app
+
         yield TestClient(app)
 
 

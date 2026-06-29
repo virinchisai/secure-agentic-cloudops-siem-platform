@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Optional
 
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
@@ -21,6 +21,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # ---------------------------------------------------------------------------
 # Roles & permissions
 # ---------------------------------------------------------------------------
+
 
 class Role(str, Enum):
     admin = "admin"
@@ -48,6 +49,7 @@ def check_role_permission(role: str, method: str) -> bool:
 # ---------------------------------------------------------------------------
 # User model & demo database
 # ---------------------------------------------------------------------------
+
 
 class User(BaseModel):
     username: str
@@ -78,6 +80,7 @@ DEMO_USERS: dict[str, User] = {
 # Password helpers
 # ---------------------------------------------------------------------------
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -89,6 +92,7 @@ def hash_password(password: str) -> str:
 # ---------------------------------------------------------------------------
 # JWT helpers
 # ---------------------------------------------------------------------------
+
 
 def create_access_token(
     data: dict,

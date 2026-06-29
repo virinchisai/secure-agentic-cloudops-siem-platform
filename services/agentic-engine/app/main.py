@@ -21,9 +21,14 @@ app = FastAPI(title="agentic-engine", version="0.1.0")
 # Request / response schemas
 # ---------------------------------------------------------------------------
 
+
 class TriageRequest(BaseModel):
-    alert: dict[str, Any] = Field(..., description="Alert object (alert_id, score, label, …)")
-    event: dict[str, Any] = Field(..., description="Source event (event_id, severity, message, fields, …)")
+    alert: dict[str, Any] = Field(
+        ..., description="Alert object (alert_id, score, label, …)"
+    )
+    event: dict[str, Any] = Field(
+        ..., description="Source event (event_id, severity, message, fields, …)"
+    )
 
 
 class TriageResponse(BaseModel):
@@ -32,7 +37,9 @@ class TriageResponse(BaseModel):
     confidence: float
     reasoning: str
     ioc_indicators: list[str]
-    engine: str = Field(description="Which engine produced the result (rule-based | llm)")
+    engine: str = Field(
+        description="Which engine produced the result (rule-based | llm)"
+    )
 
 
 class EnrichRequest(BaseModel):
@@ -50,6 +57,7 @@ class EnrichResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
 
 @app.get("/health")
 def health():
@@ -106,7 +114,11 @@ async def enrich_alert(req: EnrichRequest):
         try:
             resp = await client.post(
                 f"{VECTOR_KB_URL}/search",
-                json={"query": query_text, "collection": "threat_intel", "top_k": req.top_k},
+                json={
+                    "query": query_text,
+                    "collection": "threat_intel",
+                    "top_k": req.top_k,
+                },
             )
             if resp.status_code == 200:
                 threat_intel = resp.json().get("results", [])

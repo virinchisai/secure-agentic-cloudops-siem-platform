@@ -1,7 +1,5 @@
 """Tests for the vector store."""
 
-import uuid
-
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
@@ -10,7 +8,9 @@ from app.store import VectorStore
 
 def _fresh_store() -> VectorStore:
     """Create a truly isolated ephemeral store by using unique collection names."""
-    client = chromadb.Client(ChromaSettings(anonymized_telemetry=False, allow_reset=True))
+    client = chromadb.Client(
+        ChromaSettings(anonymized_telemetry=False, allow_reset=True)
+    )
     client.reset()
 
     store = VectorStore.__new__(VectorStore)
@@ -40,7 +40,9 @@ class TestVectorStore:
             doc_id="alert-002",
         )
 
-        results = self.store.search_similar("SSH brute force attack", collection="alerts", top_k=2)
+        results = self.store.search_similar(
+            "SSH brute force attack", collection="alerts", top_k=2
+        )
 
         assert len(results) == 2
         assert results[0]["id"] == "alert-001"  # closest match
@@ -56,15 +58,21 @@ class TestVectorStore:
         )
         assert doc_id is not None
 
-        results = self.store.search_similar("command and control domain", collection="threat_intel")
+        results = self.store.search_similar(
+            "command and control domain", collection="threat_intel"
+        )
         assert len(results) == 1
         assert results[0]["metadata"]["indicator"] == "evil.example.com"
 
     def test_stats(self):
         assert self.store.get_stats()["total"] == 0
 
-        self.store.index_document(text="Alert 1", metadata={"type": "test"}, doc_id="a1")
-        self.store.index_document(text="Alert 2", metadata={"type": "test"}, doc_id="a2")
+        self.store.index_document(
+            text="Alert 1", metadata={"type": "test"}, doc_id="a1"
+        )
+        self.store.index_document(
+            text="Alert 2", metadata={"type": "test"}, doc_id="a2"
+        )
         self.store.index_threat_intel(indicator="1.2.3.4", intel_type="ip")
 
         stats = self.store.get_stats()
@@ -78,7 +86,9 @@ class TestVectorStore:
 
     def test_upsert_overwrites(self):
         self.store.index_document(text="Version 1", metadata={"v": "1"}, doc_id="doc-x")
-        self.store.index_document(text="Version 2 updated", metadata={"v": "2"}, doc_id="doc-x")
+        self.store.index_document(
+            text="Version 2 updated", metadata={"v": "2"}, doc_id="doc-x"
+        )
 
         stats = self.store.get_stats()
         assert stats["alerts_count"] == 1  # upsert, not duplicate
