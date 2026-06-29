@@ -93,6 +93,91 @@ services:
       timeout: 5s
       retries: 10
 
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: "dev-secret-change-me-in-prod"
+      INGEST_URL: "http://ingest-service:8001"
+      DETECTION_URL: "http://detection-service:8002"
+      RATE_LIMIT_RPM: "60"
+    depends_on:
+      ingest-service:
+        condition: service_healthy
+      detection-service:
+        condition: service_healthy
+
+  dashboard-service:
+    build:
+      context: ./services/dashboard-service
+    ports:
+      - "8003:8003"
+    environment:
+      DETECTION_URL: "http://detection-service:8002"
+    depends_on:
+      detection-service:
+        condition: service_healthy
+
+  agentic-engine:
+    build:
+      context: ./services/agentic-engine
+    ports:
+      - "8004:8004"
+    environment:
+      VECTOR_KB_URL: "http://vector-kb:8005"
+      DETECTION_URL: "http://detection-service:8002"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+    depends_on:
+      detection-service:
+        condition: service_healthy
+
+  vector-kb:
+    build:
+      context: ./services/vector-kb
+    ports:
+      - "8005:8005"
+    environment:
+      CHROMA_PERSIST_DIR: "/data/chroma"
+      CHROMA_EPHEMERAL: "false"
+    volumes:
+      - chroma_data:/data/chroma
+
+  remediation-service:
+    build:
+      context: ./services/remediation-service
+    ports:
+      - "8006:8006"
+    environment:
+      DETECTION_URL: "http://detection-service:8002"
+    depends_on:
+      detection-service:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.16.2
     depends_on:
@@ -115,3 +200,6 @@ services:
 volumes:
   pgdata:
   mlflow_artifacts:
+  chroma_data:
+  prometheus_data:
+  grafana_data:
