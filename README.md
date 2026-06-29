@@ -31,10 +31,17 @@ This project simulates how modern security platforms ingest logs, process them i
 
 | Component | Status | Details |
 |-----------|--------|---------|
+| API Gateway | 🟢 Active | JWT auth + RBAC + rate limiting on `:8000` |
 | Ingest Service | 🟢 Active | FastAPI on `:8001` — validates, normalizes, publishes to Kafka |
 | Detection Engine | 🟢 Active | 5 rules, Kafka consumer, real-time scoring on `:8002` |
+| SIEM Dashboard | 🟢 Active | Web UI with Chart.js visualizations on `:8003` |
+| Agentic Engine | 🟢 Active | LLM-powered alert triage on `:8004` |
+| Vector KB (RAG) | 🟢 Active | ChromaDB-backed semantic search on `:8005` |
+| Remediation Workflows | 🟢 Active | Automated response engine on `:8006` |
 | Streaming (Kafka) | 🟢 Active | Redpanda on `:9092` with Console UI on `:8080` |
 | PostgreSQL | 🟢 Active | Events + alerts persistence on `:5432` |
+| Prometheus | 🟢 Active | Metrics collection on `:9090` |
+| Grafana | 🟢 Active | Dashboards on `:3000` (admin/admin) |
 | CI/CD Pipeline | 🟢 Active | Lint → Test → SAST → Docker Build |
 | MLflow | 🟢 Active | Experiment tracking on `:5001` |
 
@@ -47,12 +54,14 @@ This project simulates how modern security platforms ingest logs, process them i
 
 | Metric | Value |
 |--------|-------|
+| Microservices | 7 (gateway, ingest, detection, dashboard, agentic, vector-kb, remediation) |
 | Detection Rules | 5 (severity, brute force, priv escalation, data exfil, suspicious network) |
-| Unit Tests | 18 passing (6 ingest + 12 detection) |
+| Remediation Workflows | 4 (block_ip, isolate_host, disable_user, escalate) |
+| Unit Tests | 38+ across all services |
 | Sample Events | 12 realistic security scenarios |
 | Alert Labels | 7 categories |
-| API Endpoints | 9 (health, ingest, batch, alerts, events, stats, alert detail, update, query) |
-| Docker Services | 6 (ingest, detection, redpanda, console, postgres, mlflow) |
+| API Endpoints | 25+ across the platform |
+| Docker Services | 13 (microservices + infra + observability) |
 
 </td>
 </tr>
@@ -80,29 +89,28 @@ This repository intentionally includes **both implemented components and a forwa
 
 ### ✅ Implemented (fully working)
 
-- Ingest service (FastAPI) with validation and batch ingestion
-- Kafka-compatible streaming (Redpanda)
-- Detection service with multi-rule engine (brute force, privilege escalation, data exfiltration, suspicious network, severity-based)
-- PostgreSQL persistence for events and alerts with indexed queries
-- Investigation API (query alerts, events, stats, update alert status)
-- End-to-end data flow validation with 12 realistic sample events
-- One-command local execution (`scripts/run_all.sh`)
-- Fully Dockerized infrastructure and services
-- CI/CD pipeline with linting (Ruff, Black), unit tests, SAST (Bandit), secrets scanning, and Docker builds
-- 18 unit tests across both services
+- **Ingest service** — FastAPI with validation and batch ingestion
+- **Kafka streaming** — Redpanda for event streaming with replay
+- **Detection engine** — 5-rule engine (brute force, privilege escalation, data exfiltration, suspicious network, severity)
+- **PostgreSQL persistence** — Events and alerts with indexed queries
+- **Investigation API** — Query alerts, events, stats, update alert status
+- **API Gateway** — JWT authentication, RBAC (admin/analyst/viewer), rate limiting
+- **SIEM Dashboard** — Web UI with severity charts, label distribution, recent alerts table
+- **Agentic Reasoning Engine** — LLM-powered triage with rule-based fallback (no API key required)
+- **Vector Knowledge Base** — ChromaDB-backed semantic search for alerts and threat intel
+- **Remediation Workflows** — 4 automated workflows (block_ip, isolate_host, disable_user, escalate)
+- **Observability** — Prometheus metrics + Grafana dashboards
+- **One-command execution** — `scripts/run_all.sh`
+- **Fully Dockerized** — 13 services with health checks and proper dependencies
+- **CI/CD pipeline** — Ruff + Black, pytest, Bandit SAST, secrets scanning, Docker builds
 
 ### 🧭 Planned / roadmap
 
-- Agentic LLM reasoning engine
-- Vector knowledge base for contextual retrieval
-- Automated remediation workflows
-- API gateway with authentication (JWT / OAuth / RBAC)
-- SIEM dashboards and visualizations
-- Cloud deployment (AWS / GCP)
-
-> ⚠️ **Scope note**  
-> Advanced components described later in this README represent **architectural intent and future roadmap**.  
-> The current implementation focuses on a production-grade ingestion, streaming, detection, and persistence pipeline.
+- Cloud deployment (AWS ECS/EKS, GCP GKE) with Terraform IaC
+- TLS everywhere, secrets management (Vault)
+- Multi-tenant support
+- Cross-event correlation engine
+- Threat intelligence feed integration
 
 ---
 
@@ -159,21 +167,38 @@ flowchart TD
 <summary><b>📝 ASCII fallback (in case Mermaid doesn't render)</b></summary>
 
 ```text
-Client (curl / scripts / agents)
-        |
-        v
-Ingest Service (FastAPI)
-        |
-        v
-Kafka / Redpanda (topic: logs.raw)
-        |
-        v
-Detection Service (Kafka Consumer)
-        |
-        v
-PostgreSQL
-   ├── events   (normalized logs)
-   └── alerts   (scored detections)
+                        ┌──────────────────────┐
+                        │   API Gateway (8000) │
+                        │  JWT + RBAC + Rate   │
+                        └──────────┬───────────┘
+                                   │
+              ┌────────────────────┼────────────────────┐
+              v                    v                    v
+    ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+    │ Ingest (8001)    │  │ Dashboard (8003) │  │ Remediation(8006)│
+    │   FastAPI        │  │   Web UI         │  │   Workflows      │
+    └─────────┬────────┘  └────────┬─────────┘  └──────────────────┘
+              │                    │
+              v                    │
+    ┌──────────────────┐           │
+    │ Kafka / Redpanda │           │
+    │   (logs.raw)     │           │
+    └─────────┬────────┘           │
+              v                    │
+    ┌──────────────────┐           │
+    │ Detection (8002) │<──────────┘
+    │  5-rule engine   │
+    └─────────┬────────┘
+              │
+              v
+    ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+    │   PostgreSQL     │  │ Agentic (8004)   │  │ Vector KB (8005) │
+    │ events + alerts  │<-│ LLM Triage       │->│ ChromaDB / RAG   │
+    └──────────────────┘  └──────────────────┘  └──────────────────┘
+
+    ┌──────────────────┐  ┌──────────────────┐
+    │ Prometheus (9090)│->│  Grafana (3000)  │   ← Observability
+    └──────────────────┘  └──────────────────┘
 ```
 
 </details>
@@ -265,12 +290,19 @@ flowchart LR
 
 | Service | Port | Purpose |
 |------|----:|------|
+| API Gateway | 8000 | Auth + RBAC + rate limiting |
 | Ingest Service | 8001 | Log ingestion API |
 | Detection Service | 8002 | Detection + Kafka consumer |
+| Dashboard Service | 8003 | SIEM web dashboard |
+| Agentic Engine | 8004 | LLM-powered alert triage |
+| Vector KB | 8005 | RAG semantic search |
+| Remediation Service | 8006 | Automated workflows |
 | Redpanda (Kafka) | 9092 | Streaming broker |
 | Redpanda Console | 8080 | Kafka UI |
 | Redpanda HTTP API | 8082 | Broker admin |
 | PostgreSQL | 5432 | Events & alerts DB |
+| Prometheus | 9090 | Metrics collection |
+| Grafana | 3000 | Observability dashboards |
 | MLflow | 5001 | Experiment tracking |
 
 ---

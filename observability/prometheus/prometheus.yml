@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "ingest-service"
+    static_configs:
+      - targets: ["ingest-service:8001"]
+
+  - job_name: "detection-service"
+    static_configs:
+      - targets: ["detection-service:8002"]
+
+  - job_name: "api-gateway"
+    static_configs:
+      - targets: ["api-gateway:8000"]
+
+  - job_name: "dashboard-service"
+    static_configs:
+      - targets: ["dashboard-service:8003"]

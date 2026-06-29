@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Agentic CloudOps SIEM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="header">
+    <h1>Secure Agentic CloudOps SIEM</h1>
+    <div class="header-meta">
+        <span class="status-indicator">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Connected</span>
+        </span>
+        <span id="lastUpdated">Last updated: --</span>
+    </div>
+</header>
+
+<main class="dashboard">
+    <div class="error-banner" id="errorBanner"></div>
+
+    <!-- Summary Cards -->
+    <section class="summary-cards">
+        <div class="card">
+            <div class="card-label">Total Events</div>
+            <div class="card-value accent" id="totalEvents">--</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Total Alerts</div>
+            <div class="card-value" id="totalAlerts">--</div>
+        </div>
+        <div class="card">
+            <div class="card-label">High Severity</div>
+            <div class="card-value critical" id="highSeverity">--</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Detection Rules Active</div>
+            <div class="card-value accent" id="rulesActive">--</div>
+        </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="charts-row">
+        <div class="chart-container">
+            <h3>Alert Severity Distribution</h3>
+            <div class="chart-wrapper">
+                <canvas id="severityChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <h3>Alerts by Label</h3>
+            <div class="chart-wrapper">
+                <canvas id="labelChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Alerts Table -->
+    <section class="table-container">
+        <h3>Recent Alerts</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Alert ID</th>
+                    <th>Label</th>
+                    <th>Score</th>
+                    <th>Status</th>
+                    <th>Rule</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody id="alertsTableBody">
+                <tr>
+                    <td colspan="6" class="empty-state">Loading alerts...</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+
+<script>
+    const SEVERITY_COLORS = {
+        critical: '#e53935',
+        high: '#ff9800',
+        medium: '#fdd835',
+        low: '#66bb6a',
+        info: '#42a5f5',
+    };
+
+    const LABEL_COLORS = [
+        '#4fc3f7', '#e53935', '#ff9800', '#66bb6a',
+        '#ab47bc', '#fdd835', '#26c6da', '#ef5350',
+        '#78909c', '#8d6e63',
+    ];
+
+    let severityChart = null;
+    let labelChart = null;
+
+    function initCharts() {
+        const barCtx = document.getElementById('severityChart').getContext('2d');
+        severityChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Count',
+                    data: [],
+                    backgroundColor: [],
+                    borderRadius: 4,
+                    maxBarThickness: 60,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#a0a0b8' },
+                        grid: { color: 'rgba(42,58,94,0.4)' },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#a0a0b8', precision: 0 },
+                        grid: { color: 'rgba(42,58,94,0.4)' },
+                    },
+                },
+            },
+        });
+
+        const doughnutCtx = document.getElementById('labelChart').getContext('2d');
+        labelChart = new Chart(doughnutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [],
+                    borderColor: '#1e2a4a',
+                    borderWidth: 2,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#a0a0b8', padding: 12, font: { size: 11 } },
+                    },
+                },
+            },
+        });
+    }
+
+    function getBadgeClass(value) {
+        const v = (value || '').toLowerCase().replace(/\s+/g, '_');
+        const known = ['critical', 'high', 'medium', 'low', 'info',
+                        'new', 'investigating', 'resolved', 'false_positive'];
+        return known.includes(v) ? `badge badge-${v}` : 'badge badge-info';
+    }
+
+    function formatTimestamp(ts) {
+        if (!ts) return '--';
+        try {
+            const d = new Date(ts);
+            return d.toLocaleString();
+        } catch {
+            return ts;
+        }
+    }
+
+    function truncateId(id) {
+        if (!id) return '--';
+        return id.length > 12 ? id.substring(0, 12) + '...' : id;
+    }
+
+    function updateDashboard(data) {
+        // Error banner
+        const banner = document.getElementById('errorBanner');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        if (data.error) {
+            banner.textContent = data.error;
+            banner.classList.add('visible');
+            statusDot.classList.add('error');
+            statusText.textContent = 'Disconnected';
+        } else {
+            banner.classList.remove('visible');
+            statusDot.classList.remove('error');
+            statusText.textContent = 'Connected';
+        }
+
+        // Summary cards
+        document.getElementById('totalEvents').textContent =
+            (data.total_events || 0).toLocaleString();
+        document.getElementById('totalAlerts').textContent =
+            (data.total_alerts || 0).toLocaleString();
+        document.getElementById('rulesActive').textContent =
+            data.detection_rules_active || 0;
+
+        // High severity count
+        const highLabels = ['critical', 'high_severity', 'brute_force', 'privilege_escalation'];
+        let highCount = 0;
+        for (const item of (data.alerts_by_label || [])) {
+            if (highLabels.some(h => (item.label || '').toLowerCase().includes(h))) {
+                highCount += item.count || 0;
+            }
+        }
+        document.getElementById('highSeverity').textContent = highCount.toLocaleString();
+
+        // Severity bar chart
+        const sevDist = data.severity_distribution || {};
+        const sevLabels = Object.keys(sevDist);
+        const sevValues = Object.values(sevDist);
+        const sevColors = sevLabels.map((label, i) => {
+            const lower = label.toLowerCase();
+            for (const [key, color] of Object.entries(SEVERITY_COLORS)) {
+                if (lower.includes(key)) return color;
+            }
+            return LABEL_COLORS[i % LABEL_COLORS.length];
+        });
+
+        severityChart.data.labels = sevLabels;
+        severityChart.data.datasets[0].data = sevValues;
+        severityChart.data.datasets[0].backgroundColor = sevColors;
+        severityChart.update();
+
+        // Label doughnut chart
+        const byLabel = data.alerts_by_label || [];
+        labelChart.data.labels = byLabel.map(item => item.label || 'unknown');
+        labelChart.data.datasets[0].data = byLabel.map(item => item.count || 0);
+        labelChart.data.datasets[0].backgroundColor =
+            byLabel.map((_, i) => LABEL_COLORS[i % LABEL_COLORS.length]);
+        labelChart.update();
+
+        // Recent alerts table
+        const tbody = document.getElementById('alertsTableBody');
+        const alerts = data.recent_alerts || [];
+        if (alerts.length === 0) {
+            tbody.innerHTML =
+                '<tr><td colspan="6" class="empty-state">No alerts found</td></tr>';
+        } else {
+            tbody.innerHTML = alerts.map(alert => `
+                <tr>
+                    <td title="${alert.alert_id || ''}">${truncateId(alert.alert_id)}</td>
+                    <td><span class="${getBadgeClass(alert.label)}">${alert.label || '--'}</span></td>
+                    <td>${(alert.score != null) ? alert.score.toFixed(2) : '--'}</td>
+                    <td><span class="${getBadgeClass(alert.status)}">${alert.status || '--'}</span></td>
+                    <td>${alert.model_version || '--'}</td>
+                    <td>${formatTimestamp(alert.created_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Last updated
+        document.getElementById('lastUpdated').textContent =
+            'Last updated: ' + new Date().toLocaleTimeString();
+    }
+
+    async function fetchData() {
+        try {
+            const resp = await fetch('/api/dashboard-data');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            updateDashboard(data);
+        } catch (err) {
+            console.error('Failed to fetch dashboard data:', err);
+            updateDashboard({ error: 'Failed to fetch dashboard data: ' + err.message });
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        initCharts();
+        fetchData();
+        setInterval(fetchData, 30000);
+    });
+</script>
+
+</body>
+</html>
