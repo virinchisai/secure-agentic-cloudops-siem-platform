@@ -56,8 +56,14 @@ BUILTIN_WORKFLOWS: list[Workflow] = [
         description="Block the source IP associated with the alert via firewall rules (simulated).",
         steps=[
             WorkflowStep(action="extract_ip", target="alert", params={}),
-            WorkflowStep(action="block_ip", target="firewall", params={"duration_hours": 24}),
-            WorkflowStep(action="update_alert_status", target="alert", params={"status": "resolved"}),
+            WorkflowStep(
+                action="block_ip", target="firewall", params={"duration_hours": 24}
+            ),
+            WorkflowStep(
+                action="update_alert_status",
+                target="alert",
+                params={"status": "resolved"},
+            ),
             WorkflowStep(action="log_action", target="audit", params={}),
         ],
         trigger_labels=["brute_force_attempt", "suspicious_network_activity"],
@@ -69,8 +75,14 @@ BUILTIN_WORKFLOWS: list[Workflow] = [
         steps=[
             WorkflowStep(action="identify_host", target="alert", params={}),
             WorkflowStep(action="isolate_host", target="network", params={}),
-            WorkflowStep(action="update_alert_status", target="alert", params={"status": "investigating"}),
-            WorkflowStep(action="notify", target="soc_team", params={"channel": "slack"}),
+            WorkflowStep(
+                action="update_alert_status",
+                target="alert",
+                params={"status": "investigating"},
+            ),
+            WorkflowStep(
+                action="notify", target="soc_team", params={"channel": "slack"}
+            ),
         ],
         trigger_labels=["data_exfiltration_risk", "privilege_escalation"],
     ),
@@ -82,7 +94,11 @@ BUILTIN_WORKFLOWS: list[Workflow] = [
             WorkflowStep(action="identify_user", target="alert", params={}),
             WorkflowStep(action="disable_account", target="iam", params={}),
             WorkflowStep(action="revoke_sessions", target="iam", params={}),
-            WorkflowStep(action="update_alert_status", target="alert", params={"status": "resolved"}),
+            WorkflowStep(
+                action="update_alert_status",
+                target="alert",
+                params={"status": "resolved"},
+            ),
             WorkflowStep(action="log_action", target="audit", params={}),
         ],
         trigger_labels=["brute_force_attempt", "privilege_escalation"],
@@ -92,8 +108,14 @@ BUILTIN_WORKFLOWS: list[Workflow] = [
         name="Escalate to SOC Team",
         description="Escalate a high-severity alert to the SOC team for manual review (simulated).",
         steps=[
-            WorkflowStep(action="update_alert_status", target="alert", params={"status": "investigating"}),
-            WorkflowStep(action="notify", target="soc_team", params={"channel": "pagerduty"}),
+            WorkflowStep(
+                action="update_alert_status",
+                target="alert",
+                params={"status": "investigating"},
+            ),
+            WorkflowStep(
+                action="notify", target="soc_team", params={"channel": "pagerduty"}
+            ),
             WorkflowStep(action="log_action", target="audit", params={}),
         ],
         trigger_labels=["high_severity_event"],
@@ -108,6 +130,7 @@ def _get_workflow_map() -> dict[str, Workflow]:
 # ---------------------------------------------------------------------------
 # Simulated step executors
 # ---------------------------------------------------------------------------
+
 
 def _simulate_step(step: WorkflowStep, alert_id: str) -> str:
     """Simulate executing a single workflow step. Returns a log message."""
@@ -145,6 +168,7 @@ def _simulate_step(step: WorkflowStep, alert_id: str) -> str:
 # Workflow engine
 # ---------------------------------------------------------------------------
 
+
 class WorkflowEngine:
     """Executes remediation workflows and tracks their status."""
 
@@ -180,7 +204,9 @@ class WorkflowEngine:
 
             execution.status = ExecutionStatus.COMPLETED
         except Exception as exc:
-            logger.exception("Workflow %s failed at step %d", workflow_id, execution.steps_completed)
+            logger.exception(
+                "Workflow %s failed at step %d", workflow_id, execution.steps_completed
+            )
             execution.status = ExecutionStatus.FAILED
             execution.details.append(f"[ERROR] {exc}")
 

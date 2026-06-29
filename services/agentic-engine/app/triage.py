@@ -30,15 +30,39 @@ class TriageResult:
 # Pattern catalogue: (regex on label, base severity, action template)
 _LABEL_PATTERNS: list[tuple[str, str, str]] = [
     (r"brute.?force", "high", "Block source IP and reset affected credentials"),
-    (r"privilege.?escalation", "critical", "Isolate host immediately; revoke escalated session"),
-    (r"data.?exfil", "critical", "Cut outbound traffic from source; initiate forensic capture"),
-    (r"malware|trojan|ransomware", "critical", "Quarantine endpoint; trigger EDR containment"),
-    (r"phishing", "high", "Quarantine email; notify affected users; block sender domain"),
-    (r"unauthorized.?access", "high", "Revoke session tokens; enforce MFA re-enrollment"),
+    (
+        r"privilege.?escalation",
+        "critical",
+        "Isolate host immediately; revoke escalated session",
+    ),
+    (
+        r"data.?exfil",
+        "critical",
+        "Cut outbound traffic from source; initiate forensic capture",
+    ),
+    (
+        r"malware|trojan|ransomware",
+        "critical",
+        "Quarantine endpoint; trigger EDR containment",
+    ),
+    (
+        r"phishing",
+        "high",
+        "Quarantine email; notify affected users; block sender domain",
+    ),
+    (
+        r"unauthorized.?access",
+        "high",
+        "Revoke session tokens; enforce MFA re-enrollment",
+    ),
     (r"anomal", "medium", "Investigate anomaly; correlate with recent change windows"),
     (r"policy.?violation", "medium", "Flag for compliance review; notify asset owner"),
     (r"suspicious", "medium", "Enrich with threat-intel and escalate to analyst"),
-    (r"info|informational", "info", "Log for trend analysis; no immediate action required"),
+    (
+        r"info|informational",
+        "info",
+        "Log for trend analysis; no immediate action required",
+    ),
 ]
 
 _SEVERITY_RANK = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0}
@@ -60,7 +84,9 @@ def _extract_iocs(event: dict[str, Any]) -> list[str]:
         iocs.append(f"hash:sha256:{h}")
 
     # Domains (simple)
-    for domain in re.findall(r"\b(?:[a-z0-9-]+\.)+(?:com|net|org|io|ru|cn|xyz|top)\b", text):
+    for domain in re.findall(
+        r"\b(?:[a-z0-9-]+\.)+(?:com|net|org|io|ru|cn|xyz|top)\b", text
+    ):
         iocs.append(f"domain:{domain}")
 
     return list(dict.fromkeys(iocs))  # dedupe, preserve order
@@ -83,9 +109,15 @@ class RuleBasedTriager:
                 break
 
         # Bump severity if score is very high
-        if score >= 0.95 and _SEVERITY_RANK.get(matched_severity, 0) < _SEVERITY_RANK["critical"]:
+        if (
+            score >= 0.95
+            and _SEVERITY_RANK.get(matched_severity, 0) < _SEVERITY_RANK["critical"]
+        ):
             matched_severity = "critical"
-        elif score >= 0.9 and _SEVERITY_RANK.get(matched_severity, 0) < _SEVERITY_RANK["high"]:
+        elif (
+            score >= 0.9
+            and _SEVERITY_RANK.get(matched_severity, 0) < _SEVERITY_RANK["high"]
+        ):
             matched_severity = "high"
 
         confidence = min(0.6 + score * 0.3, 0.92)  # rule-based caps at 0.92
@@ -172,6 +204,7 @@ class LLMTriager:
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def get_triager() -> RuleBasedTriager | LLMTriager:
     """Return the best available triager."""

@@ -23,9 +23,12 @@ def rule_brute_force(event: dict) -> DetectionResult | None:
     msg = (event.get("message") or "").lower()
     log_type = (event.get("log_type") or "").lower()
     if log_type == "authentication" and any(
-        kw in msg for kw in ["failed login", "invalid password", "brute force", "account locked"]
+        kw in msg
+        for kw in ["failed login", "invalid password", "brute force", "account locked"]
     ):
-        return DetectionResult(score=0.90, label="brute_force_attempt", rule_name="brute_force")
+        return DetectionResult(
+            score=0.90, label="brute_force_attempt", rule_name="brute_force"
+        )
     return None
 
 
@@ -75,7 +78,9 @@ def rule_suspicious_network(event: dict) -> DetectionResult | None:
         )
     if any(kw in dst for kw in ["tor", "onion", "proxy"]):
         return DetectionResult(
-            score=0.91, label="suspicious_network_activity", rule_name="suspicious_destination"
+            score=0.91,
+            label="suspicious_network_activity",
+            rule_name="suspicious_destination",
         )
     return None
 

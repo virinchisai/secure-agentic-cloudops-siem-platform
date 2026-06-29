@@ -26,21 +26,35 @@ SAMPLE_EVENTS = [
         "log_type": "authorization",
         "severity": "critical",
         "message": "User role changed to admin — privilege escalation detected",
-        "fields": {"user": "jdoe", "old_role": "viewer", "new_role": "admin", "action": "role_change"},
+        "fields": {
+            "user": "jdoe",
+            "old_role": "viewer",
+            "new_role": "admin",
+            "action": "role_change",
+        },
     },
     {
         "source": "firewall",
         "log_type": "network",
         "severity": "high",
         "message": "Outbound connection to suspicious destination on port 4444",
-        "fields": {"src_ip": "10.0.1.55", "destination": "evil.example.com", "port": 4444, "protocol": "tcp"},
+        "fields": {
+            "src_ip": "10.0.1.55",
+            "destination": "evil.example.com",
+            "port": 4444,
+            "protocol": "tcp",
+        },
     },
     {
         "source": "dlp-agent",
         "log_type": "data_access",
         "severity": "high",
         "message": "Large download detected — potential data exfiltration",
-        "fields": {"user": "contractor_bob", "bytes_transferred": 250_000_000, "file_count": 1420},
+        "fields": {
+            "user": "contractor_bob",
+            "bytes_transferred": 250_000_000,
+            "file_count": 1420,
+        },
     },
     {
         "source": "web-app",
@@ -54,21 +68,33 @@ SAMPLE_EVENTS = [
         "log_type": "cloud",
         "severity": "high",
         "message": "S3 bucket policy changed to public access",
-        "fields": {"bucket": "prod-backups", "actor": "deploy-bot", "region": "us-east-1"},
+        "fields": {
+            "bucket": "prod-backups",
+            "actor": "deploy-bot",
+            "region": "us-east-1",
+        },
     },
     {
         "source": "endpoint-agent",
         "log_type": "endpoint",
         "severity": "critical",
         "message": "Malware signature detected — trojan.generic",
-        "fields": {"hostname": "ws-042", "file": "/tmp/.hidden/payload.exe", "hash": "a1b2c3d4e5f6"},
+        "fields": {
+            "hostname": "ws-042",
+            "file": "/tmp/.hidden/payload.exe",
+            "hash": "a1b2c3d4e5f6",
+        },
     },
     {
         "source": "dns-proxy",
         "log_type": "network",
         "severity": "medium",
         "message": "DNS query to known tor exit node relay",
-        "fields": {"query": "exit-relay.tor.example.com", "destination": "tor-exit", "src_ip": "10.0.2.99"},
+        "fields": {
+            "query": "exit-relay.tor.example.com",
+            "destination": "tor-exit",
+            "src_ip": "10.0.2.99",
+        },
     },
     {
         "source": "sso-provider",
@@ -89,7 +115,11 @@ SAMPLE_EVENTS = [
         "log_type": "cloud",
         "severity": "high",
         "message": "Pod created with elevated privileges — sudo container detected",
-        "fields": {"namespace": "production", "pod": "debug-shell-xz9", "privileged": True},
+        "fields": {
+            "namespace": "production",
+            "pod": "debug-shell-xz9",
+            "privileged": True,
+        },
     },
 ]
 
@@ -104,7 +134,9 @@ def main():
             r = requests.post(INGEST_URL, json=event, timeout=5)
             data = r.json()
             status = "OK" if r.status_code in (200, 202) else "FAIL"
-            print(f"  [{i:>2}/{len(SAMPLE_EVENTS)}] {status} {event['source']:>16} | {event['severity']:<8} | {data.get('event_id', 'n/a')}")
+            print(
+                f"  [{i:>2}/{len(SAMPLE_EVENTS)}] {status} {event['source']:>16} | {event['severity']:<8} | {data.get('event_id', 'n/a')}"
+            )
             if r.status_code in (200, 202):
                 succeeded += 1
         except Exception as e:

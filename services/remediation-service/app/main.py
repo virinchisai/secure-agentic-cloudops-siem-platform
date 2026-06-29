@@ -18,12 +18,14 @@ app = FastAPI(title="remediation-service", version="0.1.0")
 
 # ---- request / response models ----
 
+
 class ExecuteRequest(BaseModel):
     workflow_id: str
     alert_id: str
 
 
 # ---- routes ----
+
 
 @app.get("/health")
 def health():
