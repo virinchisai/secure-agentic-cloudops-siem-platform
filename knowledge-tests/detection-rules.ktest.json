@@ -1,0 +1,20 @@
+{
+  "name": "SIEM detection behavior remains reviewable",
+  "audience": "employee",
+  "required_claims": [
+    "siem/detection#exfiltration-byte-threshold",
+    "siem/detection#critical-severity-score",
+    "siem/detection#suspicious-ports"
+  ],
+  "required_sources": ["services/detection-service/app/rules.py"],
+  "expected_values": {
+    "siem/detection#exfiltration-byte-threshold": 100000000,
+    "siem/detection#critical-severity-score": 0.95,
+    "siem/detection#suspicious-ports": "1337,4444,5555,31337"
+  },
+  "expected_classifications": {
+    "siem/detection#exfiltration-byte-threshold": "internal",
+    "siem/detection#critical-severity-score": "internal",
+    "siem/detection#suspicious-ports": "internal"
+  }
+}

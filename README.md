@@ -2,6 +2,7 @@
 
 <p align="left">
   <img src="https://github.com/virinchisai/secure-agentic-cloudops-siem-platform/actions/workflows/python-app.yml/badge.svg" alt="Python CI" />
+  <img src="https://github.com/virinchisai/secure-agentic-cloudops-siem-platform/actions/workflows/knowledge-reliability.yml/badge.svg" alt="Knowledge Reliability" />
   <img src="https://img.shields.io/github/languages/top/virinchisai/secure-agentic-cloudops-siem-platform" alt="Top Language" />
   <img src="https://img.shields.io/github/repo-size/virinchisai/secure-agentic-cloudops-siem-platform" alt="Repo Size" />
   <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12" />

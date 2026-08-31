@@ -1,0 +1,18 @@
+{
+  "id": "siem/detection#exfiltration-byte-threshold",
+  "subject": "data-exfiltration-rule",
+  "predicate": "bytes_out_threshold_exclusive",
+  "value": 100000000,
+  "sources": [{
+    "uri": "services/detection-service/app/rules.py",
+    "sha256": "3c4b377048869ac73b32763af1c398aed103beb7a186d9a60367bdb666ab06a9",
+    "classification": "internal"
+  }],
+  "classification": "internal",
+  "audiences": ["employee"],
+  "owner": "detection-engineering",
+  "verified_at": "2026-08-31",
+  "stale_after": "2027-08-31",
+  "status": "stable",
+  "body": "Outbound transfers greater than 100,000,000 bytes trigger the data-exfiltration risk rule."
+}

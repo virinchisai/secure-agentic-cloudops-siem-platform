@@ -1,0 +1,18 @@
+{
+  "id": "siem/detection#suspicious-ports",
+  "subject": "suspicious-network-rule",
+  "predicate": "monitored_ports",
+  "value": "1337,4444,5555,31337",
+  "sources": [{
+    "uri": "services/detection-service/app/rules.py",
+    "sha256": "3c4b377048869ac73b32763af1c398aed103beb7a186d9a60367bdb666ab06a9",
+    "classification": "internal"
+  }],
+  "classification": "internal",
+  "audiences": ["employee"],
+  "owner": "detection-engineering",
+  "verified_at": "2026-08-31",
+  "stale_after": "2027-08-31",
+  "status": "stable",
+  "body": "Network ports 1337, 4444, 5555, and 31337 are treated as suspicious."
+}
